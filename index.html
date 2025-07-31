@@ -1,0 +1,655 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0056b3" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="BLO Register" />
+
+  <title>Population Register for BLO</title>
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192x192.png" />
+
+  <!-- Chart.js, Excel, PDF -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #a8e6ff, #ffffff);
+      min-height: 100vh;
+      color: #333;
+      overflow-x: hidden;
+    }
+
+    .app-container {
+      max-width: 100%;
+      margin: 0 auto;
+      padding: 15px;
+    }
+
+    header {
+      text-align: center;
+      padding: 20px 0;
+      font-size: 1.8em;
+      font-weight: 600;
+      color: #0056b3;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .tab-container {
+      display: flex;
+      justify-content: space-around;
+      background: rgba(255, 255, 255, 0.4);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-radius: 15px;
+      padding: 8px;
+      margin: 20px 0;
+      box-shadow: 0 4px 12px rgba(0, 94, 184, 0.15);
+      position: sticky;
+      top: 10px;
+      z-index: 1000;
+    }
+
+    .tab {
+      padding: 12px 16px;
+      width: 100%;
+      text-align: center;
+      font-weight: 600;
+      color: #555;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .tab.active {
+      background: linear-gradient(135deg, #0077ff, #00bfff);
+      color: white;
+      box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3);
+    }
+
+    .content {
+      display: none;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-radius: 15px;
+      margin-top: 15px;
+      box-shadow: 0 6px 16px rgba(0, 94, 184, 0.12);
+      animation: fadeIn 0.4s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .counter-card {
+      text-align: center;
+      padding: 20px;
+      margin: 10px 0;
+      background: rgba(255, 255, 255, 0.7);
+      border-radius: 15px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+      font-size: 1.1em;
+    }
+
+    .counter-value {
+      font-size: 2.5em;
+      font-weight: 700;
+      color: #0056b3;
+    }
+
+    .counter-label {
+      font-size: 1em;
+      color: #444;
+      margin-top: 5px;
+    }
+
+    .gender-icon {
+      font-size: 1.5em;
+      vertical-align: middle;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin: 20px 0;
+    }
+
+    input, select {
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      font-size: 1em;
+      background: rgba(255, 255, 255, 0.8);
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: #0077ff;
+      box-shadow: 0 0 0 2px rgba(0, 119, 255, 0.2);
+    }
+
+    .btn {
+      padding: 14px;
+      margin-top: 10px;
+      background: linear-gradient(135deg, #0077ff, #00bfff);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 1.1em;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0, 119, 255, 0.3);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 14px rgba(0, 119, 255, 0.4);
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, #ff4d4d, #ff8f8f);
+      box-shadow: 0 4px 10px rgba(255, 77, 77, 0.3);
+    }
+
+    .member-form {
+      margin-top: 20px;
+      padding: 15px;
+      background: rgba(240, 248, 255, 0.5);
+      border-radius: 12px;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .form-row input {
+      flex: 1;
+    }
+
+    .list-item {
+      padding: 15px;
+      margin: 10px 0;
+      background: rgba(255, 255, 255, 0.7);
+      border-radius: 12px;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+    }
+
+    .collapsible {
+      cursor: pointer;
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .content-list {
+      display: none;
+      margin-top: 10px;
+      padding-left: 15px;
+    }
+
+    .age-tag {
+      font-size: 0.8em;
+      padding: 3px 8px;
+      border-radius: 10px;
+      background: #e0f7ff;
+      color: #0056b3;
+      margin-left: 8px;
+    }
+
+    .search-filter {
+      margin: 20px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .summary-banner {
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 15px;
+      padding: 10px;
+      background: rgba(0, 123, 255, 0.1);
+      border-radius: 10px;
+      font-size: 0.9em;
+    }
+
+    .badge {
+      padding: 5px 10px;
+      border-radius: 8px;
+      background: #e0f7ff;
+      color: #0056b3;
+      font-weight: 600;
+    }
+
+    #installPrompt {
+      display: none;
+      margin: 10px 0;
+      background: #0056b3;
+      color: white;
+      text-align: center;
+      padding: 12px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    @media (max-width: 480px) {
+      .counter-value { font-size: 2em; }
+      .form-row { flex-direction: column; }
+      .tab { padding: 10px 0; font-size: 0.9em; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Install Prompt -->
+    <div id="installPrompt">
+      <p>Install Population Register for BLO?</p>
+      <button id="installButton" class="btn" style="padding:8px 12px; font-size:0.9em;">Add to Home Screen</button>
+    </div>
+
+    <header>Population Register for BLO</header>
+
+    <!-- Tabs -->
+    <div class="tab-container">
+      <div class="tab active" data-tab="home">Home</div>
+      <div class="tab" data-tab="addFamily">Add Family</div>
+      <div class="tab" data-tab="addMember">Add Member</div>
+      <div class="tab" data-tab="familyList">Family List</div>
+      <div class="tab" data-tab="export">Export</div>
+    </div>
+
+    <!-- Home Tab -->
+    <div id="home" class="content" style="display:block;">
+      <div class="counter-card">
+        <div class="counter-value" id="totalMale">0</div>
+        <div class="counter-label"><span class="gender-icon">♂️</span> Male</div>
+      </div>
+      <div class="counter-card">
+        <div class="counter-value" id="totalFemale">0</div>
+        <div class="counter-label"><span class="gender-icon">♀️</span> Female</div>
+      </div>
+      <div class="counter-card">
+        <div class="counter-value" id="totalPopulation">0</div>
+        <div class="counter-label">Total Population</div>
+      </div>
+    </div>
+
+    <!-- Add Family Tab -->
+    <div id="addFamily" class="content">
+      <h2>Register Family Head</h2>
+      <form id="familyForm">
+        <input type="text" id="headName" placeholder="Head Name" required />
+        <input type="text" id="fatherName" placeholder="Father's Name" required />
+        <input type="text" id="aadhar" placeholder="12-digit Aadhar Number" maxlength="12" required />
+        <input type="tel" id="phone" placeholder="Phone Number" />
+        <input type="text" id="address" placeholder="Address (Optional)" />
+        <button type="submit" class="btn">Save & Add Members</button>
+      </form>
+    </div>
+
+    <!-- Add Member Tab -->
+    <div id="addMember" class="content">
+      <h2>Add Family Member</h2>
+      <p><strong>House No:</strong> <span id="currentHouse">None</span></p>
+      <form id="memberForm" class="member-form">
+        <input type="text" id="memberName" placeholder="Member Name" required />
+        <input type="text" id="memberFatherName" placeholder="Father's Name" required />
+        <input type="date" id="dob" required />
+        <div class="form-row">
+          <input type="text" id="memberAadhar" placeholder="12-digit Aadhar" maxlength="12" required />
+          <input type="tel" id="memberPhone" placeholder="Phone (Optional)" />
+        </div>
+        <select id="gender" required>
+          <option value="">Select Gender</option>
+          <option value="Male">♂️ Male</option>
+          <option value="Female">♀️ Female</option>
+        </select>
+        <button type="submit" class="btn">Add Member</button>
+      </form>
+    </div>
+
+    <!-- Family List Tab -->
+    <div id="familyList" class="content">
+      <h2>All Registered Families</h2>
+      <div class="search-filter">
+        <input type="text" id="searchQuery" placeholder="Search by Name, Phone, Aadhar, House No..." />
+        <select id="filterAgeGroup">
+          <option value="">All Age Groups</option>
+          <option value="0-16">0–16</option>
+          <option value="17">17</option>
+          <option value="18-19">18–19</option>
+          <option value="20+">20+</option>
+        </select>
+        <select id="filterGender">
+          <option value="">All Genders</option>
+          <option value="Male">♂️ Male</option>
+          <option value="Female">♀️ Female</option>
+        </select>
+      </div>
+      <div id="summaryBanner" class="summary-banner"></div>
+      <div id="familyListContainer"></div>
+    </div>
+
+    <!-- Export Tab -->
+    <div id="export" class="content">
+      <h2>Export Data</h2>
+      <p>Download your population data in various formats.</p>
+      <button id="exportExcel" class="btn">Download Excel</button>
+      <button id="exportPdf" class="btn" style="margin: 10px 0;">Download PDF</button>
+      <button id="printData" class="btn">Print View</button>
+      <div id="reportPreview" style="margin-top: 20px;"></div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      let families = [];
+      let currentHouseNo = 0;
+      let deferredPrompt;
+
+      // Load data
+      try {
+        const saved = localStorage.getItem('blo_families');
+        if (saved) families = JSON.parse(saved);
+        const savedHouse = localStorage.getItem('blo_currentHouseNo');
+        currentHouseNo = savedHouse ? parseInt(savedHouse) : families.length > 0 ? Math.max(...families.map(f => parseInt(f.houseNo))) : 0;
+      } catch (e) {
+        console.warn("Storage access denied", e);
+      }
+
+      function getNextHouseNumber() {
+        const next = currentHouseNo + 1;
+        currentHouseNo = next;
+        try {
+          localStorage.setItem('blo_currentHouseNo', next.toString());
+        } catch (e) {}
+        return next.toString().padStart(2, '0');
+      }
+
+      function saveData() {
+        try {
+          localStorage.setItem('blo_families', JSON.stringify(families));
+          updateHomeStats();
+          updateFamilyList();
+        } catch (e) {
+          console.warn("Save failed", e);
+        }
+      }
+
+      function updateHomeStats() {
+        const counts = { male: 0, female: 0 };
+        families.forEach(f => {
+          f.members.forEach(m => {
+            if (m.gender === 'Male') counts.male++;
+            else if (m.gender === 'Female') counts.female++;
+          });
+        });
+        document.getElementById('totalMale').textContent = counts.male;
+        document.getElementById('totalFemale').textContent = counts.female;
+        document.getElementById('totalPopulation').textContent = counts.male + counts.female;
+      }
+
+      // Tabs
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+          document.querySelectorAll('.content').forEach(c => c.style.display = 'none');
+          tab.classList.add('active');
+          const tabId = tab.getAttribute('data-tab');
+          document.getElementById({addMember:'addMember',familyList:'familyList',export:'export',addFamily:'addFamily'}[tabId] || 'home').style.display = 'block';
+          if (tabId === 'addMember' && families.length > 0) {
+            document.getElementById('currentHouse').textContent = families[families.length - 1].houseNo;
+          }
+        });
+      });
+
+      // Family Form
+      document.getElementById('familyForm').addEventListener('submit', e => {
+        e.preventDefault();
+        const houseNo = getNextHouseNumber();
+        families.push({
+          houseNo,
+          head: {
+            name: document.getElementById('headName').value,
+            fatherName: document.getElementById('fatherName').value,
+            aadhar: document.getElementById('aadhar').value,
+            phone: document.getElementById('phone').value,
+            address: document.getElementById('address').value
+          },
+          members: []
+        });
+        saveData();
+        document.getElementById('familyForm').reset();
+        alert(`Family registered with House No: ${houseNo}`);
+        document.querySelectorAll('.tab')[2].click();
+        document.getElementById('currentHouse').textContent = houseNo;
+      });
+
+      // Member Form
+      document.getElementById('memberForm').addEventListener('submit', e => {
+        e.preventDefault();
+        if (families.length === 0) {
+          alert("Register a family first!");
+          return;
+        }
+        const houseNo = families[families.length - 1].houseNo;
+        const dob = new Date(document.getElementById('dob').value);
+        const age = new Date().getFullYear() - dob.getFullYear();
+        const ageGroup = age <= 16 ? '0-16' : age === 17 ? '17' : age <= 19 ? '18-19' : '20+';
+
+        const member = {
+          name: document.getElementById('memberName').value,
+          fatherName: document.getElementById('memberFatherName').value,
+          dob: dob.toISOString().split('T')[0],
+          aadhar: document.getElementById('memberAadhar').value,
+          phone: document.getElementById('memberPhone').value,
+          gender: document.getElementById('gender').value,
+          age,
+          ageGroup
+        };
+
+        const family = families.find(f => f.houseNo === houseNo);
+        if (family) {
+          family.members.push(member);
+          saveData();
+          alert(`${member.name} added to House No ${houseNo}`);
+          document.getElementById('memberForm').reset();
+        }
+      });
+
+      // Update List
+      function updateFamilyList() {
+        const container = document.getElementById('familyListContainer');
+        const summary = document.getElementById('summaryBanner');
+        container.innerHTML = '';
+
+        const summaryCount = { '0-16': { Male: 0, Female: 0 }, '17': { Male: 0, Female: 0 }, '18-19': { Male: 0, Female: 0 }, '20+': { Male: 0, Female: 0 } };
+        families.forEach(f => f.members.forEach(m => m.gender && summaryCount[m.ageGroup][m.gender]++));
+
+        summary.innerHTML = Object.entries(summaryCount).map(([g, c]) => 
+          `<div class="badge">${g}: ♂️${c.Male} ♀️${c.Female}</div>`
+        ).join('');
+
+        const query = document.getElementById('searchQuery').value.toLowerCase();
+        const ageFilter = document.getElementById('filterAgeGroup').value;
+        const genderFilter = document.getElementById('filterGender').value;
+
+        const filtered = families.filter(f => f.members.some(m =>
+          (m.name.toLowerCase().includes(query) || m.phone?.includes(query) || m.aadhar.includes(query) || f.houseNo.includes(query)) &&
+          (!ageFilter || m.ageGroup === ageFilter) && (!genderFilter || m.gender === genderFilter)
+        ));
+
+        filtered.forEach(f => {
+          const card = document.createElement('div');
+          card.className = 'list-item';
+          card.innerHTML = `
+            <div class="collapsible">House: ${f.houseNo} | Head: ${f.head.name} | Count: ${f.members.length} 🔽</div>
+            <div class="content-list">
+              ${f.members.map(m => `
+                <div style="padding:8px; background:#f0f8ff; border-radius:8px; margin:5px 0;">
+                  ${m.name} (${m.gender}, ${m.age}) | ${m.aadhar}
+                  <button onclick="editMember('${f.houseNo}','${m.aadhar}')" style="font-size:0.8em">Edit</button>
+                  <button onclick="deleteMember('${f.houseNo}','${m.aadhar}')" class="btn-danger" style="font-size:0.8em">Del</button>
+                </div>
+              `).join('')}
+            </div>`;
+          container.appendChild(card);
+        });
+
+        const collapsibles = document.querySelectorAll('.collapsible');
+        collapsibles.forEach(el => {
+          el.onclick = () => {
+            const content = el.nextElementSibling;
+            content.style.display = content.style.display === 'block' ? 'none' : 'block';
+          };
+        });
+      }
+
+      window.editMember = function(houseNo, aadhar) {
+        const f = families.find(f => f.houseNo === houseNo);
+        const m = f?.members.find(m => m.aadhar === aadhar);
+        if (!m) return;
+        m.name = prompt("Name", m.name) || m.name;
+        m.fatherName = prompt("Father", m.fatherName) || m.fatherName;
+        m.dob = prompt("DOB", m.dob) || m.dob;
+        const age = new Date().getFullYear() - new Date(m.dob).getFullYear();
+        m.age = age;
+        m.ageGroup = age <= 16 ? '0-16' : age === 17 ? '17' : age <= 19 ? '18-19' : '20+';
+        m.gender = prompt("Gender", m.gender) || m.gender;
+        saveData();
+      };
+
+      window.deleteMember = function(houseNo, aadhar) {
+        if (confirm("Delete?")) {
+          const f = families.find(f => f.houseNo === houseNo);
+          f.members = f.members.filter(m => m.aadhar !== aadhar);
+          saveData();
+        }
+      };
+
+      document.getElementById('searchQuery').addEventListener('input', updateFamilyList);
+      document.getElementById('filterAgeGroup').addEventListener('change', updateFamilyList);
+      document.getElementById('filterGender').addEventListener('change', updateFamilyList);
+
+      // Export
+      document.getElementById('exportExcel').onclick = () => {
+        const data = families.flatMap(f => f.members.map(m => ({ House: f.houseNo, Name: m.name, Gender: m.gender, Age: m.age, Aadhar: m.aadhar, Phone: m.phone })));
+        const ws = XLSX.utils.json_to_sheet(data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Data");
+        XLSX.writeFile(wb, `BLO_Register_${new Date().toISOString().slice(0,10)}.xlsx`);
+      };
+
+      document.getElementById('exportPdf').onclick = () => {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        doc.text("Population Register", 14, 20);
+        let y = 30;
+        families.forEach(f => {
+          doc.setFont('bold'); doc.text(`House: ${f.houseNo}`, 14, y); y += 10;
+          doc.setFont('normal');
+          f.members.forEach(m => { doc.text(`${m.name} (${m.gender}, ${m.age})`, 14, y); y += 8; });
+          y += 5;
+          if (y > 250) { doc.addPage(); y = 20; }
+        });
+        doc.save("BLO_Register.pdf");
+      };
+
+      document.getElementById('printData').onclick = () => {
+        const p = document.getElementById('reportPreview');
+        p.innerHTML = `<h3>Report</h3>` + families.map(f =>
+          `<p><b>House ${f.houseNo}</b>: ${f.members.map(m => m.name).join(', ')}</p>`
+        ).join('');
+        setTimeout(() => window.print(), 500);
+      };
+
+      // PWA Install Prompt
+      const installPrompt = document.getElementById('installPrompt');
+      const installButton = document.getElementById('installButton');
+
+      window.addEventListener('beforeinstallprompt', e => {
+        e.preventDefault();
+        deferredPrompt = e;
+        installPrompt.style.display = 'block';
+      });
+
+      installButton.addEventListener('click', () => {
+        installPrompt.style.display = 'none';
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
+      });
+
+      window.addEventListener('appinstalled', () => {
+        console.log('PWA installed');
+      });
+
+      updateHomeStats();
+      updateFamilyList();
+    })();
+  </script>
+</body>
+</html><style>{
+  "name": "Population Register for BLO",
+  "short_name": "BLO Register",
+  "description": "Field survey app for household and population data.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#a8e6ff",
+  "theme_color": "#0056b3",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}</style><script>const CACHE_NAME = 'blo-register-v1';
+const urlsToCache = [
+  './index.html',
+  './manifest.json'
+];
+
+self.addEventListener('install', event => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(urlsToCache))
+  );
+});
+
+self.addEventListener('fetch', event => {
+  event.respondWith(
+    caches.match(event.request)
+      .then(response => {
+        return response || fetch(event.request);
+      })
+  );
+});</script>
